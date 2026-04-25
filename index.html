@@ -81,6 +81,12 @@
         border: 3px solid white;
         min-height: 80px;
     }
+
+    #estadoCarga {
+        font-size: 16px;
+        margin-bottom: 10px;
+        opacity: 0.8;
+    }
 </style>
 </head>
 
@@ -90,7 +96,9 @@
 
     <h1>Comprobador de Premios<br>Penya-Roja</h1>
 
-    <input type="number" id="numeroInput" placeholder="0000" min="1" max="2000">
+    <div id="estadoCarga">Cargando lista de participantes...</div>
+
+    <input type="number" id="numeroInput" placeholder="0000" min="1">
 
     <br>
 
@@ -102,35 +110,63 @@
 
 <script>
 let baseDatos = [];
+let cargado = false;
 
 // Cargar CSV automáticamente
 fetch("participantes.csv")
     .then(res => res.text())
     .then(texto => {
-        const lineas = texto.trim().split("\n");
-        lineas.shift(); // quitar cabecera
+        const lineas = texto.trim().split(/\r?\n/);
+        if (lineas.length === 0) return;
 
-        baseDatos = lineas.map(l => {
-            const [numero, participante] = l.split(",");
-            return { numero: numero.trim(), participante: participante.trim() };
-        });
+        // Detectar separador: ; o ,
+        const cabecera = lineas[0];
+        const separador = cabecera.includes(";") ? ";" : ",";
+
+        // Quitar cabecera
+        lineas.shift();
+
+        baseDatos = lineas
+            .map(l => l.trim())
+            .filter(l => l.length > 0)
+            .map(l => {
+                const partes = l.split(separador);
+                const numero = parseInt(partes[0].trim(), 10); // <-- IMPORTANTE
+                const participante = (partes[1] || "").trim();
+                return { numero, participante };
+            });
+
+        cargado = true;
+        document.getElementById("estadoCarga").innerText = "Lista cargada correctamente.";
+    })
+    .catch(err => {
+        console.error(err);
+        document.getElementById("estadoCarga").innerText = "Error al cargar participantes.csv";
     });
 
 function buscarParticipante() {
-    const numero = document.getElementById("numeroInput").value.padStart(4, "0");
     const resultado = document.getElementById("resultado");
 
-    if (!numero || numero === "0000") {
+    if (!cargado) {
+        resultado.innerHTML = "⏳ La lista aún no se ha cargado. Espera un momento.";
+        return;
+    }
+
+    const numeroRaw = document.getElementById("numeroInput").value;
+
+    if (!numeroRaw || parseInt(numeroRaw) < 1) {
         resultado.innerHTML = "Introduce un número válido";
         return;
     }
 
-    const encontrado = baseDatos.find(r => r.numero === numero);
+    const numeroBuscado = parseInt(numeroRaw, 10); // <-- SIN CEROS DELANTE
+
+    const encontrado = baseDatos.find(r => r.numero === numeroBuscado);
 
     if (encontrado) {
-        resultado.innerHTML = `🎉 Número ${numero}<br>👤 Participante: <b>${encontrado.participante}</b>`;
+        resultado.innerHTML = `🎉 Número ${numeroBuscado}<br>👤 Participante: <b>${encontrado.participante}</b>`;
     } else {
-        resultado.innerHTML = `❌ El número ${numero} no está en la lista`;
+        resultado.innerHTML = `❌ El número ${numeroBuscado} no está en la lista`;
     }
 }
 </script>
