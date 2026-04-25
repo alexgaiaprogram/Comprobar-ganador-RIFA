@@ -131,7 +131,7 @@ fetch("participantes.csv")
             .filter(l => l.length > 0)
             .map(l => {
                 const partes = l.split(separador);
-                const numero = parseInt(partes[0].trim(), 10); // <-- IMPORTANTE
+                const numero = parseInt(partes[0].trim(), 10);
                 const participante = (partes[1] || "").trim();
                 return { numero, participante };
             });
@@ -146,20 +146,21 @@ fetch("participantes.csv")
 
 function buscarParticipante() {
     const resultado = document.getElementById("resultado");
+    const input = document.getElementById("numeroInput");
 
     if (!cargado) {
         resultado.innerHTML = "⏳ La lista aún no se ha cargado. Espera un momento.";
         return;
     }
 
-    const numeroRaw = document.getElementById("numeroInput").value;
+    const numeroRaw = input.value;
 
     if (!numeroRaw || parseInt(numeroRaw) < 1) {
         resultado.innerHTML = "Introduce un número válido";
         return;
     }
 
-    const numeroBuscado = parseInt(numeroRaw, 10); // <-- SIN CEROS DELANTE
+    const numeroBuscado = parseInt(numeroRaw, 10);
 
     const encontrado = baseDatos.find(r => r.numero === numeroBuscado);
 
@@ -168,6 +169,9 @@ function buscarParticipante() {
     } else {
         resultado.innerHTML = `❌ El número ${numeroBuscado} no está en la lista`;
     }
+
+    // ✔ LIMPIAR CAMPO TRAS COMPROBAR
+    input.value = "";
 }
 </script>
 
